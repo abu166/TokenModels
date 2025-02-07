@@ -1,54 +1,78 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract AIModelMarketplace is Ownable {
-    IERC20 public token;
+contract AIModelMarketplace {
+    using Counters for Counters.Counter;
+    Counters.Counter private _modelIds;
 
     struct AIModel {
         uint256 id;
         string name;
         string description;
         uint256 price;
-        address payable seller;
-        bool sold;
+        address seller;
+        string modelHash; // IPFS hash or storage reference
+        bool isSold;
     }
 
-    uint256 public modelCounter;
     mapping(uint256 => AIModel) public models;
+    IERC20 public paymentToken;
 
-    event ModelListed(uint256 id, string name, uint256 price, address indexed seller);
-    event ModelSold(uint256 id, address indexed buyer);
+    event ModelListed(uint256 id, address seller, uint256 price);
+    event ModelPurchased(uint256 id, address buyer);
 
-    // Fix: Pass msg.sender to Ownable
-    constructor(address _token) Ownable(msg.sender) {
-        require(_token != address(0), "Token address cannot be zero");
-        token = IERC20(_token);
+    constructor(address _tokenAddress) {
+        require(_tokenAddress != address(0), "Invalid token address");
+        paymentToken = IERC20(_tokenAddress);
     }
 
-    function listModel(string memory _name, string memory _description, uint256 _price) public {
-        require(_price > 0, "Price must be greater than zero");
-        modelCounter++;
-        models[modelCounter] = AIModel(modelCounter, _name, _description, _price, payable(msg.sender), false);
-        emit ModelListed(modelCounter, _name, _price, msg.sender);
+    function listModel(
+        string memory name,
+        string memory description,
+        uint256 price,
+        string memory modelHash
+    ) external {
+        require(price > 0, "Price must be greater than zero");
+
+        _modelIds.increment();
+        uint256 newModelId = _modelIds.current();
+        
+        models[newModelId] = AIModel({
+            id: newModelId,
+            name: name,
+            description: description,
+            price: price,
+            seller: msg.sender,
+            modelHash: modelHash,
+            isSold: false
+        });
+
+        emit ModelListed(newModelId, msg.sender, price);
     }
 
-    function buyModel(uint256 _id) public {
-        AIModel storage model = models[_id];
-        require(!model.sold, "Model already sold");
-        require(token.transferFrom(msg.sender, model.seller, model.price), "Payment failed");
-        model.sold = true;
-        emit ModelSold(_id, msg.sender);
+    function buyModel(uint256 modelId) external {
+        require(modelId > 0 && modelId <= _modelIds.current(), "Invalid model ID");
+        
+        AIModel storage model = models[modelId];
+        require(!model.isSold, "Model already sold");
+        require(model.seller != address(0), "Seller does not exist");
+
+        // Ensure buyer has enough balance and allowance
+        require(paymentToken.balanceOf(msg.sender) >= model.price, "Insufficient token balance");
+        require(paymentToken.allowance(msg.sender, address(this)) >= model.price, "Approve more tokens");
+
+        // Transfer tokens from buyer to seller
+        bool success = paymentToken.transferFrom(msg.sender, model.seller, model.price);
+        require(success, "Token transfer failed");
+
+        model.isSold = true;
+        emit ModelPurchased(modelId, msg.sender);
     }
 
-    function getModelDetails(uint256 _id) public view returns (string memory, string memory, uint256, address, bool) {
-        AIModel storage model = models[_id];
-        return (model.name, model.description, model.price, model.seller, model.sold);
-    }
-
-    function getTotalModels() public view returns (uint256) {
-        return modelCounter;
+    function getTokenBalance(address account) public view returns (uint256) {
+        return paymentToken.balanceOf(account);
     }
 }
