@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const NavBar = ({ account, balance, connectWallet, disconnectWallet }) => {
+const NavBar = ({ account, balance, connectWallet, disconnectWallet, refreshBalance }) => {
   return (
     <nav style={styles.nav}>
       <h1>AI Model Marketplace</h1>
@@ -13,7 +13,8 @@ const NavBar = ({ account, balance, connectWallet, disconnectWallet }) => {
         {account ? (
           <>
             <p>Wallet: {account.substring(0, 6)}...{account.slice(-4)}</p>
-            <p>ERC-20 Balance: {balance} Tokens</p>
+            <p>ERC-20 Balance: {Number(balance).toFixed(4)} Tokens</p>
+            <button onClick={refreshBalance} style={styles.buttonRefresh}>Refresh Balance</button>
             <button onClick={disconnectWallet} style={styles.buttonDisconnect}>Disconnect</button>
           </>
         ) : (
@@ -60,6 +61,16 @@ const styles = {
     cursor: "pointer",
     borderRadius: "5px",
     marginTop: "5px",
+  },
+  buttonRefresh: {
+    padding: "8px 12px",
+    fontSize: "14px",
+    backgroundColor: "#28A745",
+    color: "#fff",
+    border: "none",
+    cursor: "pointer",
+    borderRadius: "5px",
+    marginRight: "5px",
   },
 };
 

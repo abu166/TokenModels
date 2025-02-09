@@ -1,4 +1,5 @@
-export const CONTRACT_ADDRESS = "0xea545c6292ccec5e1ad437d6a9f11d1533ed9e69";
+export const CONTRACT_ADDRESS = "0xe3b6bb62300190ee1ebd5a61c9fc4d9140b5d1e2";
+export const TOKEN_ADDRESS = "0x7f7c71c86d12f532298e5226408ce140e9991d98";
 export const CONTRACT_ABI = [
 	{
 		"inputs": [
@@ -178,7 +179,6 @@ export const CONTRACT_ABI = [
 		"type": "function"
 	}
 ];  // Paste your contract ABI here
-export const TOKEN_ADDRESS = "0x2884f3be32063d6037a7179a8e9624c7e882f859";
 export const TOKEN_ABI = [
 	{
 		"inputs": [

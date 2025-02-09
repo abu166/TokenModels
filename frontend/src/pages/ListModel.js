@@ -1,64 +1,102 @@
 import React, { useState } from "react";
+import { parseUnits } from "ethers";
 
-const ListModel = ({ contract }) => {
-  const [modelName, setModelName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
+const ListModel = ({ contract, account, provider, tokenAddress }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    fileHash: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!contract) return alert("Smart contract not loaded.");
-
+    setLoading(true);
+    setError("");
+    
     try {
-      const tx = await contract.listModel(modelName, description, price);
+      if (!provider || !account) {
+        throw new Error("Wallet not connected");
+      }
+      
+      if (!contract) {
+        throw new Error("Marketplace contract not loaded");
+      }
+
+      const priceInWei = parseUnits(formData.price, 18);
+      const tx = await contract.listModel(
+        formData.name,
+        formData.description,
+        priceInWei,
+        formData.fileHash
+      );
+      
       await tx.wait();
       alert("Model listed successfully!");
-    } catch (error) {
-      console.error(error);
-      alert("Error listing model.");
+      setFormData({ name: "", description: "", price: "", fileHash: "" });
+      
+    } catch (err) {
+      setError(err.reason || err.message);
+      console.error("Listing error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h2>List Your AI Model</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <input
-          type="text"
-          placeholder="Model Name"
-          value={modelName}
-          onChange={(e) => setModelName(e.target.value)}
-          required
-        />
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Price (in ERC-20 Tokens)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-        <button type="submit">List Model</button>
+    <div className="list-model-container">
+      <h2>List New AI Model</h2>
+      {error && <div className="error">{error}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Model Name</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Price ({tokenAddress ? "ERC-20" : "ETH"})</label>
+          <input
+            type="number"
+            step="0.0001"
+            value={formData.price}
+            onChange={(e) => setFormData({...formData, price: e.target.value})}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Model IPFS Hash/URL</label>
+          <input
+            type="text"
+            value={formData.fileHash}
+            onChange={(e) => setFormData({...formData, fileHash: e.target.value})}
+            required
+          />
+        </div>
+
+        <button type="submit" disabled={loading || !account}>
+          {loading ? "Processing..." : "List Model"}
+        </button>
       </form>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    textAlign: "center",
-    padding: "20px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
 };
 
 export default ListModel;
