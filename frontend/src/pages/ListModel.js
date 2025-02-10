@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { parseUnits } from "ethers";
 
-const ListModel = ({ contract, account, provider, tokenAddress }) => {
+const ListModel = ({ contract, account, provider, refreshModels }) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -36,7 +36,12 @@ const ListModel = ({ contract, account, provider, tokenAddress }) => {
       await tx.wait();
       alert("Model listed successfully!");
       setFormData({ name: "", description: "", price: "", fileHash: "" });
+      console.log("refreshModels function:", refreshModels);
+      if (typeof refreshModels === "function") {
+        refreshModels(); 
+      }
       
+
     } catch (err) {
       setError(err.reason || err.message);
       console.error("Listing error:", err);
@@ -71,7 +76,7 @@ const ListModel = ({ contract, account, provider, tokenAddress }) => {
         </div>
 
         <div className="form-group">
-          <label>Price ({tokenAddress ? "ERC-20" : "ETH"})</label>
+          <label>Price (ERC)</label>
           <input
             type="number"
             step="0.0001"

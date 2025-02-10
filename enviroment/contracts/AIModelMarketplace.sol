@@ -8,21 +8,24 @@ contract AIModelMarketplace {
     using Counters for Counters.Counter;
     Counters.Counter private _modelIds;
 
+    IERC20 public paymentToken;
+
     struct AIModel {
         uint256 id;
         string name;
         string description;
         uint256 price;
         address seller;
-        string modelHash; // IPFS hash or storage reference
+        string modelHash;
         bool isSold;
+        bool exists;
     }
 
     mapping(uint256 => AIModel) public models;
-    IERC20 public paymentToken;
 
-    event ModelListed(uint256 id, address seller, uint256 price);
-    event ModelPurchased(uint256 id, address buyer);
+    event ModelListed(uint256 indexed id, address indexed seller, uint256 price);
+    event ModelPurchased(uint256 indexed id, address indexed buyer, uint256 price);
+    event ModelDeleted(uint256 indexed id, address indexed seller);
 
     constructor(address _tokenAddress) {
         require(_tokenAddress != address(0), "Invalid token address");
@@ -39,7 +42,7 @@ contract AIModelMarketplace {
 
         _modelIds.increment();
         uint256 newModelId = _modelIds.current();
-        
+
         models[newModelId] = AIModel({
             id: newModelId,
             name: name,
@@ -47,30 +50,74 @@ contract AIModelMarketplace {
             price: price,
             seller: msg.sender,
             modelHash: modelHash,
-            isSold: false
+            isSold: false,
+            exists: true
         });
 
         emit ModelListed(newModelId, msg.sender, price);
     }
 
-    function buyModel(uint256 modelId) external {
-        require(modelId > 0 && modelId <= _modelIds.current(), "Invalid model ID");
+    function deleteModel(uint256 _id) public {
+        require(models[_id].exists, "Model does not exist");
+        require(models[_id].seller == msg.sender, "You are not the owner");
+        require(!models[_id].isSold, "Cannot delete a sold model");
         
-        AIModel storage model = models[modelId];
-        require(!model.isSold, "Model already sold");
-        require(model.seller != address(0), "Seller does not exist");
+        models[_id].exists = false; // Mark model as non-existent
+        
+        emit ModelDeleted(_id, msg.sender);
+    }
 
-        // Ensure buyer has enough balance and allowance
-        require(paymentToken.balanceOf(msg.sender) >= model.price, "Insufficient token balance");
-        require(paymentToken.allowance(msg.sender, address(this)) >= model.price, "Approve more tokens");
+    function buyModel(uint256 modelId) external {
+        require(models[modelId].exists, "Model does not exist");
+        require(!models[modelId].isSold, "Model already sold");
+        require(models[modelId].seller != address(0), "Invalid seller");
+        require(msg.sender != models[modelId].seller, "Cannot buy your own model");
 
-        // Transfer tokens from buyer to seller
-        bool success = paymentToken.transferFrom(msg.sender, model.seller, model.price);
+        require(paymentToken.balanceOf(msg.sender) >= models[modelId].price, "Insufficient token balance");
+        require(paymentToken.allowance(msg.sender, address(this)) >= models[modelId].price, "Approve more tokens");
+
+        bool success = paymentToken.transferFrom(msg.sender, models[modelId].seller, models[modelId].price);
         require(success, "Token transfer failed");
 
-        model.isSold = true;
-        emit ModelPurchased(modelId, msg.sender);
+        models[modelId].isSold = true;
+        emit ModelPurchased(modelId, msg.sender, models[modelId].price);
     }
+
+    function getAvailableModels() external view returns (AIModel[] memory) {
+        uint256 count = _modelIds.current();
+        uint256 availableCount = 0;
+
+        for (uint256 i = 1; i <= count; i++) {
+            if (models[i].exists && !models[i].isSold) {
+                availableCount++;
+            }
+        }
+
+        AIModel[] memory availableModels = new AIModel[](availableCount);
+        uint256 index = 0;
+        for (uint256 i = 1; i <= count; i++) {
+            if (models[i].exists && !models[i].isSold) {
+                availableModels[index] = models[i];
+                index++;
+            }
+        }
+
+        return availableModels;
+    }
+
+    function getModelCount() public view returns (uint256) {
+        uint256 count = _modelIds.current();
+        uint256 availableCount = 0;
+
+        for (uint256 i = 1; i <= count; i++) {
+            if (models[i].exists) {
+                availableCount++;
+            }
+        }
+
+        return availableCount;
+    }
+
 
     function getTokenBalance(address account) public view returns (uint256) {
         return paymentToken.balanceOf(account);

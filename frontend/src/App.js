@@ -11,6 +11,7 @@ function App() {
   const [balance, setBalance] = useState(0);
   const [contract, setContract] = useState(null);
   const [provider, setProvider] = useState(null);
+  const [signer, setSigner] = useState(null);
   const [tokenContract, setTokenContract] = useState(null);
 
   const initializeContracts = useCallback(async (signer) => {
@@ -31,6 +32,7 @@ function App() {
     setBalance(0);
     setContract(null);
     setProvider(null);
+    setSigner(null);
     setTokenContract(null);
     localStorage.removeItem("account");
   }, []);
@@ -67,6 +69,7 @@ function App() {
       const signer = await provider.getSigner();
       
       setProvider(provider);
+      setSigner(signer);
       setAccount(accounts[0]);
       localStorage.setItem("account", accounts[0]);
       
@@ -81,19 +84,6 @@ function App() {
     }
   }, [initializeContracts, resetState]);
 
-  const loadAccountData = useCallback(async () => {
-    if (!window.ethereum) return;
-    try {
-      const accounts = await window.ethereum.request({ 
-        method: "eth_requestAccounts" 
-      });
-      await setupWalletConnection(accounts);
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-    }
-  }, [setupWalletConnection]);
-
-  // Initial check for wallet connection
   useEffect(() => {
     const checkInitialConnection = async () => {
       if (!window.ethereum) return;
@@ -111,14 +101,12 @@ function App() {
         resetState();
       }
     };
-
     checkInitialConnection();
   }, [setupWalletConnection, resetState]);
 
-  // Handle account changes
+
   useEffect(() => {
     if (!window.ethereum) return;
-
     const handleAccountsChanged = async (accounts) => {
       if (accounts.length > 0) {
         await setupWalletConnection(accounts);
@@ -126,9 +114,7 @@ function App() {
         await handleDisconnect();
       }
     };
-
     window.ethereum.on("accountsChanged", handleAccountsChanged);
-    
     return () => {
       window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
     };
@@ -139,13 +125,13 @@ function App() {
       <NavBar 
         account={account}
         balance={balance}
-        connectWallet={loadAccountData}
+        connectWallet={setupWalletConnection}
         disconnectWallet={handleDisconnect}
         refreshBalance={refreshBalance}
       />
       
       <Routes>
-        <Route path="/" element={<Home contract={contract} account={account} />} />
+        <Route path="/" element={<Home provider={provider} signer={signer} account={account} />} />
         <Route 
           path="/list" 
           element={
