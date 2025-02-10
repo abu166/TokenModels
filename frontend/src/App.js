@@ -7,89 +7,132 @@ import NavBar from "./components/NavBar";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN_ADDRESS, TOKEN_ABI } from "./config";
 
 function App() {
-  const [account, setAccount] = useState(null);
+  const [account, setAccount] = useState(localStorage.getItem("account") || null);
   const [balance, setBalance] = useState(0);
   const [contract, setContract] = useState(null);
   const [provider, setProvider] = useState(null);
   const [tokenContract, setTokenContract] = useState(null);
 
   const initializeContracts = useCallback(async (signer) => {
-    const mainContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    const token = new Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
-    setContract(mainContract);
-    setTokenContract(token);
-    return token;
+    try {
+      const mainContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const token = new Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
+      setContract(mainContract);
+      setTokenContract(token);
+      return token;
+    } catch (error) {
+      console.error("Error initializing contracts:", error);
+      return null;
+    }
   }, []);
 
-  const loadAccountData = useCallback(async () => {
-    if (!window.ethereum) return;
-    
+  const resetState = useCallback(() => {
+    setAccount(null);
+    setBalance(0);
+    setContract(null);
+    setProvider(null);
+    setTokenContract(null);
+    localStorage.removeItem("account");
+  }, []);
+
+  const handleDisconnect = useCallback(async () => {
     try {
-      const provider = new BrowserProvider(window.ethereum);
-      setProvider(provider);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      
-      if (accounts.length > 0) {
-        const signer = await provider.getSigner();
-        const token = await initializeContracts(signer);
-        
-        setAccount(accounts[0]);
-        const balanceRaw = await token.balanceOf(accounts[0]);
-        setBalance(formatUnits(balanceRaw, 18));
+      if (window.ethereum) {
+        resetState();
+        await window.ethereum.request({
+          method: "wallet_revokePermissions",
+          params: [{ eth_accounts: {} }],
+        });
       }
     } catch (error) {
-      console.error("Error connecting:", error);
+      console.error("Error disconnecting:", error);
     }
-  }, [initializeContracts]);
+  }, [resetState]);
 
-  const checkWalletConnection = useCallback(async () => {
-    if (!window.ethereum) return;
-    
-    try {
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_accounts", []);
-      
-      if (accounts.length > 0) {
-        const signer = await provider.getSigner();
-        await initializeContracts(signer);
-        setAccount(accounts[0]);
-      }
-    } catch (error) {
-      console.error("Error checking connection:", error);
-    }
-  }, [initializeContracts]);
-
-  const refreshBalance = async () => {
+  const refreshBalance = useCallback(async () => {
     if (!account || !tokenContract) return;
-    
     try {
       const balanceRaw = await tokenContract.balanceOf(account);
       setBalance(formatUnits(balanceRaw, 18));
     } catch (error) {
       console.error("Error refreshing balance:", error);
     }
-  };
+  }, [account, tokenContract]);
 
-  useEffect(() => {
-    checkWalletConnection();
+  const setupWalletConnection = useCallback(async (accounts) => {
+    if (!window.ethereum || accounts.length === 0) return;
     
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-        } else {
-          handleDisconnect();
-        }
-      });
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      setProvider(provider);
+      setAccount(accounts[0]);
+      localStorage.setItem("account", accounts[0]);
+      
+      const token = await initializeContracts(signer);
+      if (token) {
+        const balanceRaw = await token.balanceOf(accounts[0]);
+        setBalance(formatUnits(balanceRaw, 18));
+      }
+    } catch (error) {
+      console.error("Error setting up wallet connection:", error);
+      resetState();
     }
-  }, [checkWalletConnection]);
+  }, [initializeContracts, resetState]);
 
-  const handleDisconnect = () => {
-    setAccount(null);
-    setBalance(0);
-    setContract(null);
-    setProvider(null);
-  };
+  const loadAccountData = useCallback(async () => {
+    if (!window.ethereum) return;
+    try {
+      const accounts = await window.ethereum.request({ 
+        method: "eth_requestAccounts" 
+      });
+      await setupWalletConnection(accounts);
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+    }
+  }, [setupWalletConnection]);
+
+  // Initial check for wallet connection
+  useEffect(() => {
+    const checkInitialConnection = async () => {
+      if (!window.ethereum) return;
+      try {
+        const accounts = await window.ethereum.request({ 
+          method: "eth_accounts" 
+        });
+        if (accounts.length > 0) {
+          await setupWalletConnection(accounts);
+        } else {
+          resetState();
+        }
+      } catch (error) {
+        console.error("Error checking initial connection:", error);
+        resetState();
+      }
+    };
+
+    checkInitialConnection();
+  }, [setupWalletConnection, resetState]);
+
+  // Handle account changes
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const handleAccountsChanged = async (accounts) => {
+      if (accounts.length > 0) {
+        await setupWalletConnection(accounts);
+      } else {
+        await handleDisconnect();
+      }
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    
+    return () => {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, [setupWalletConnection, handleDisconnect]);
 
   return (
     <Router>
