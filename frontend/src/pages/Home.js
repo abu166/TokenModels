@@ -33,8 +33,8 @@ const Home = ({ provider, signer, tokenContract }) => {
             for (let i = 1; i <= count; i++) {
                 try {
                     const model = await contract.models(i);
-                    
-                    // Ensure model is valid and has not been deleted
+
+                    // Ensure the model is valid and not deleted
                     if (model.exists && model.seller !== "0x0000000000000000000000000000000000000000") {
                         modelsArray.push({
                             id: i,
@@ -49,6 +49,10 @@ const Home = ({ provider, signer, tokenContract }) => {
                     console.warn(`Skipping deleted model with ID ${i}`);
                 }
             }
+
+            // Sort models: newest first
+            modelsArray.reverse();
+
             setModels(modelsArray);
         } catch (error) {
             console.error("Error fetching models:", error);
@@ -122,6 +126,11 @@ const Home = ({ provider, signer, tokenContract }) => {
         }
     };
 
+    // Separate models into categories
+    const yourModels = models.filter(model => model.owner.toLowerCase() === account?.toLowerCase());
+    const availableModels = models.filter(model => model.owner.toLowerCase() !== account?.toLowerCase() && !model.purchased);
+    const soldModels = models.filter(model => model.purchased);
+
     return (
         <div>
             <h1>AI Model Marketplace</h1>
@@ -129,38 +138,72 @@ const Home = ({ provider, signer, tokenContract }) => {
                 <p>Loading models...</p>
             ) : (
                 <div>
-                    {models.length > 0 ? (
-                        models.map((model) => (
-                            <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px" }}>
-                                <h2>{model.name}</h2>
-                                <p>{model.description}</p>
-                                <p>Price: {model.price} ERC-20</p>
-                                <p>Owner: {model.owner}</p>
+                    {/* Section for "Your Models" */}
+                    {yourModels.length > 0 && (
+                        <div>
+                            <h2>📌 Your Models</h2>
+                            {yourModels.map((model) => (
+                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: model.purchased ? "#ffd6d6" : "#f9f9f9" }}>
+                                    <h2>{model.name}</h2>
+                                    <p>{model.description}</p>
+                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Owner: You</p>
 
-                                {/* Buy Button (only if the user is not the owner and the model is not sold) */}
-                                {!model.purchased && account && model.owner.toLowerCase() !== account.toLowerCase() && (
-                                    <button onClick={() => buyModel(model.id, model.price, model.owner)}>Buy</button>
-                                )}
+                                    {/* Sold Indicator */}
+                                    {model.purchased && <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>}
 
-                                {/* Sold Indicator */}
-                                {model.purchased && <p style={{ color: "red" }}>Sold</p>}
-
-                                {/* Delete Button (only if the user is the owner AND the model is not sold) */}
-                                {account && 
-                                    model.owner.toLowerCase() === account.toLowerCase() && 
-                                    !model.purchased && (
+                                    {/* Delete Button (only if the model is not sold) */}
+                                    {!model.purchased && (
                                         <button 
                                             onClick={() => deleteModel(model.id)} 
                                             style={{ marginLeft: "10px", background: "red", color: "white" }}
                                         >
                                             Delete
                                         </button>
-                                )}
-                            </div>
-                        ))
-                    ) : (
-                        <p>No models available.</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     )}
+
+                    {/* Section for "Available Models" */}
+                    {availableModels.length > 0 && (
+                        <div>
+                            <h2>🌎 Available Models</h2>
+                            {availableModels.map((model) => (
+                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px" }}>
+                                    <h2>{model.name}</h2>
+                                    <p>{model.description}</p>
+                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Owner: {model.owner}</p>
+
+                                    {/* Buy Button */}
+                                    {account && (
+                                        <button onClick={() => buyModel(model.id, model.price, model.owner)}>Buy</button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Section for "Sold Models" */}
+                    {soldModels.length > 0 && (
+                        <div>
+                            <h2>🔴 Sold Models</h2>
+                            {soldModels.map((model) => (
+                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: "#ffd6d6" }}>
+                                    <h2>{model.name}</h2>
+                                    <p>{model.description}</p>
+                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Owner: {model.owner}</p>
+                                    <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* If no models exist */}
+                    {models.length === 0 && <p>No models available.</p>}
                 </div>
             )}
         </div>
