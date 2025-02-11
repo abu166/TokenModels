@@ -6,13 +6,14 @@
     "cra-template": "1.2.0",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
+    "ipfs-http-client": "^60.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.29.0",
     "react-scripts": "^5.0.1"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts start --no-source-maps",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -34,5 +35,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "webpack-cli": "^6.0.1"
+  },
+  "resolutions": {
+    "dag-jose": "latest"
   }
+
 }

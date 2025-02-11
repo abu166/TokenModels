@@ -15,6 +15,12 @@ function App() {
   const [tokenContract, setTokenContract] = useState(null);
 
   const initializeContracts = useCallback(async (signer) => {
+
+    if (!signer) {
+      console.error("Signer is undefined or null.");
+      return null;
+    }
+
     try {
       const mainContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       const token = new Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
@@ -52,7 +58,11 @@ function App() {
   }, [resetState]);
 
   const refreshBalance = useCallback(async () => {
-    if (!account || !tokenContract) return;
+    if (!account || !tokenContract) {
+      console.warn("Skipping balance refresh: Account or token contract is missing.");
+      return;
+    }
+    
     try {
       const balanceRaw = await tokenContract.balanceOf(account);
       setBalance(formatUnits(balanceRaw, 18));
@@ -131,7 +141,7 @@ function App() {
       />
       
       <Routes>
-        <Route path="/" element={<Home provider={provider} signer={signer} account={account} />} />
+        <Route path="/" element={<Home provider={provider} signer={signer} account={account} tokenContract={tokenContract}  />} />
         <Route 
           path="/list" 
           element={

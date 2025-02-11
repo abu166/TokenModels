@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { formatEther, parseEther, Contract } from "ethers";
+import { formatEther, parseUnits, Contract } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../config";
 
-const Home = ({ provider, signer }) => {
+const Home = ({ provider, signer, tokenContract }) => {
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [account, setAccount] = useState(null);
@@ -29,16 +29,12 @@ const Home = ({ provider, signer }) => {
             const modelCount = await contract.getModelCount();
             const count = parseInt(modelCount.toString(), 10);
 
-            if (count === 0) {
-                setModels([]);
-                setLoading(false);
-                return;
-            }
-
             let modelsArray = [];
             for (let i = 1; i <= count; i++) {
                 try {
                     const model = await contract.models(i);
+                    
+                    // Ensure model is valid and has not been deleted
                     if (model.exists && model.seller !== "0x0000000000000000000000000000000000000000") {
                         modelsArray.push({
                             id: i,
@@ -66,20 +62,41 @@ const Home = ({ provider, signer }) => {
         fetchModels();
     }, [fetchModels]);
 
-    const buyModel = async (id, price) => {
-        if (!signer) {
+    const buyModel = async (id, price, owner) => {
+        if (!signer || !tokenContract) {
             alert("Please connect your wallet.");
             return;
         }
+
+        if (owner.toLowerCase() === account.toLowerCase()) {
+            alert("You cannot buy your own model.");
+            return;
+        }
+
         try {
+            const priceInWei = parseUnits(price.toString(), 18);
+
+            // Check user's balance
+            const userBalance = await tokenContract.balanceOf(account);
+            if (userBalance < priceInWei) {
+                alert("Insufficient ERC-20 token balance.");
+                return;
+            }
+
+            // Approve marketplace contract to spend tokens
+            const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, priceInWei);
+            await approveTx.wait();
+
+            // Execute purchase
             const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            const tx = await contract.buyModel(id, { value: parseEther(price.toString()) });
+            const tx = await contract.buyModel(id);
             await tx.wait();
+
             alert("Purchase successful!");
             fetchModels();
         } catch (error) {
             console.error("Purchase failed:", error);
-            alert("Transaction failed. See console for details.");
+            alert(`Transaction failed: ${error.reason || error.message}`);
         }
     };
 
@@ -97,8 +114,8 @@ const Home = ({ provider, signer }) => {
             await tx.wait();
             alert("Model deleted successfully!");
 
-            // Remove deleted model from the state
-            setModels((prevModels) => prevModels.filter((model) => model.id !== id));
+            // Refresh model list after deletion
+            fetchModels();
         } catch (error) {
             console.error("Deletion failed:", error);
             alert("Transaction failed. See console for details.");
@@ -117,21 +134,27 @@ const Home = ({ provider, signer }) => {
                             <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px" }}>
                                 <h2>{model.name}</h2>
                                 <p>{model.description}</p>
-                                <p>Price: {model.price} ETH</p>
+                                <p>Price: {model.price} ERC-20</p>
                                 <p>Owner: {model.owner}</p>
-                                {!model.purchased ? (
-                                    <button onClick={() => buyModel(model.id, model.price)}>Buy</button>
-                                ) : (
-                                    <p style={{ color: "red" }}>Sold</p>
+
+                                {/* Buy Button (only if the user is not the owner and the model is not sold) */}
+                                {!model.purchased && account && model.owner.toLowerCase() !== account.toLowerCase() && (
+                                    <button onClick={() => buyModel(model.id, model.price, model.owner)}>Buy</button>
                                 )}
 
-                                {account && model.owner.toLowerCase() === account.toLowerCase() && (
-                                    <button 
-                                        onClick={() => deleteModel(model.id)} 
-                                        style={{ marginLeft: "10px", background: "red", color: "white" }}
-                                    >
-                                        Delete
-                                    </button>
+                                {/* Sold Indicator */}
+                                {model.purchased && <p style={{ color: "red" }}>Sold</p>}
+
+                                {/* Delete Button (only if the user is the owner AND the model is not sold) */}
+                                {account && 
+                                    model.owner.toLowerCase() === account.toLowerCase() && 
+                                    !model.purchased && (
+                                        <button 
+                                            onClick={() => deleteModel(model.id)} 
+                                            style={{ marginLeft: "10px", background: "red", color: "white" }}
+                                        >
+                                            Delete
+                                        </button>
                                 )}
                             </div>
                         ))
