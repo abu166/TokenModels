@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const NavBar = ({ account, balance, connectWallet, disconnectWallet, refreshBalance }) => {
   return (
     <nav style={styles.nav}>
-      <h1>AI Model Marketplace</h1>
+      <h1 style={styles.text}>AI Model Marketplace</h1>
       <div>
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/list" style={styles.link}>List Model</Link>
@@ -12,8 +12,8 @@ const NavBar = ({ account, balance, connectWallet, disconnectWallet, refreshBala
       <div style={styles.wallet}>
         {account ? (
           <>
-            <p>Wallet: {account.substring(0, 6)}...{account.slice(-4)}</p>
-            <p>ERC-20 Balance: {Number(balance).toFixed(4)} Tokens</p>
+            <p style={styles.text}>Wallet: {account.substring(0, 6)}...{account.slice(-4)}</p>
+            <p style={styles.text}>ERC-20 Balance: {Number(balance).toFixed(4)} Tokens</p>
             <button onClick={refreshBalance} style={styles.buttonRefresh}>Refresh Balance</button>
             <button onClick={disconnectWallet} style={styles.buttonDisconnect}>Disconnect</button>
           </>
@@ -31,12 +31,15 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "15px",
-    backgroundColor: "#1B263B",
-    color: "#fff",
+    backgroundColor: "#3E5C76",
+    color: "#FFFFFF",
+  },
+  text: {
+    color: "#FFFFFF",
   },
   link: {
     margin: "0 10px",
-    color: "#5A7D9A",
+    color: "#FFFFFF",
     textDecoration: "none",
     fontSize: "18px",
   },
