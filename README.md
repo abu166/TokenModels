@@ -13,11 +13,11 @@ Once the setup is complete, navigate to http://localhost:3000 to access the fron
 
 ## Demo Screenshots
 
-![Balance check]("materials\photos\balance_check.jpeg")
-![List Model]("materials\photos\listmodel.png")
-![Model]("materials\photos\model.jpeg")
-![How model looks for other users]("materials\photos\model_2.jpeg")
-![Sold Model]("materials\photos\sold_model.jpeg")
+![Balance check](photos/balance_check.jpeg)
+![List Model](photos/listmodel.png)
+![Model](photos/model.jpeg)
+![How model looks for other users](photos/model_2.jpeg)
+![Sold Model](photos/sold_model.jpeg)
 
 ## Examples
 Example 1:
