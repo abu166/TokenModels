@@ -13,11 +13,12 @@ Once the setup is complete, navigate to http://localhost:3000 to access the fron
 
 ## Demo Screenshots
 
-![Balance check](photos/balance_check.jpeg)
-![List Model](photos/listmodel.png)
-![Model](photos/model.jpeg)
-![How model looks for other users](photos/model_2.jpeg)
-![Sold Model](photos/sold_model.jpeg)
+<img src="photos/balance_check.jpeg" alt="Balance check" width="400">
+<img src="photos/listmodel.png" alt="List Model" width="400">
+<img src="photos/model.jpeg" alt="Model" width="400">
+<img src="photos/model_2.jpeg" alt="How model looks for other users" width="400">
+<img src="photos/sold_model.jpeg" alt="Sold Model" width="400">
+
 
 ## Examples
 Example 1:
