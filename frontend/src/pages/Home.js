@@ -146,7 +146,7 @@ const Home = ({ provider, signer, tokenContract }) => {
                                 <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: model.purchased ? "#ffd6d6" : "#f9f9f9" }}>
                                     <h2>{model.name}</h2>
                                     <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Price: {model.price} ERC</p>
                                     <p>Owner: You</p>
 
                                     {/* Sold Indicator */}
@@ -174,7 +174,7 @@ const Home = ({ provider, signer, tokenContract }) => {
                                 <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px" }}>
                                     <h2>{model.name}</h2>
                                     <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Price: {model.price} ERC</p>
                                     <p>Owner: {model.owner}</p>
 
                                     {/* Buy Button */}
@@ -194,7 +194,7 @@ const Home = ({ provider, signer, tokenContract }) => {
                                 <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: "#ffd6d6" }}>
                                     <h2>{model.name}</h2>
                                     <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC-20</p>
+                                    <p>Price: {model.price} ERC</p>
                                     <p>Owner: {model.owner}</p>
                                     <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>
                                 </div>

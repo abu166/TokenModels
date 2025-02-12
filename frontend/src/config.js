@@ -1,5 +1,5 @@
-export const CONTRACT_ADDRESS = "0xf38291b68fba8cabaa6fde5b334e5431bed34ebb";
-export const TOKEN_ADDRESS = "0x7f7c71c86d12f532298e5226408ce140e9991d98";
+export const CONTRACT_ADDRESS = "0x4936d6eb95f2560364b6ddc0e4ade691d95951a2";
+export const TOKEN_ADDRESS = "0x70ae3fba30b25436384a1b5b1cfcb1bf3b4625f4";
 // export const TOKEN_ADDRESS = "0x7b1ae719b92b0a0d5f281ece97adb4cc0de490e5";
 
 export const CONTRACT_ABI = [
