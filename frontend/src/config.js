@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = "0x4936d6eb95f2560364b6ddc0e4ade691d95951a2";
+export const CONTRACT_ADDRESS = "0xf15260d0e3c5be6923fe45332cecc02eb66775af";
 export const TOKEN_ADDRESS = "0x70ae3fba30b25436384a1b5b1cfcb1bf3b4625f4";
 // export const TOKEN_ADDRESS = "0x7b1ae719b92b0a0d5f281ece97adb4cc0de490e5";
 
@@ -84,6 +84,31 @@ export const CONTRACT_ABI = [
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "rater",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint8",
+				"name": "rating",
+				"type": "uint8"
+			}
+		],
+		"name": "ModelRated",
+		"type": "event"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -154,6 +179,16 @@ export const CONTRACT_ABI = [
 						"internalType": "bool",
 						"name": "exists",
 						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "totalRating",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "ratingCount",
+						"type": "uint256"
 					}
 				],
 				"internalType": "struct AIModelMarketplace.AIModel[]",
@@ -180,6 +215,25 @@ export const CONTRACT_ABI = [
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "modelId",
+				"type": "uint256"
+			}
+		],
+		"name": "getModelRating",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
 				"name": "account",
 				"type": "address"
@@ -191,6 +245,30 @@ export const CONTRACT_ABI = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "hasRated",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -273,6 +351,16 @@ export const CONTRACT_ABI = [
 				"internalType": "bool",
 				"name": "exists",
 				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRating",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "ratingCount",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -289,6 +377,24 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "modelId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint8",
+				"name": "rating",
+				"type": "uint8"
+			}
+		],
+		"name": "rateModel",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ];  // Paste your contract ABI here

@@ -54,7 +54,9 @@ function App() {
       }
     } catch (error) {
       console.error("Error disconnecting:", error);
-    }
+    } finally {
+      window.location.reload(); 
+    }  
   }, [resetState]);
 
   const refreshBalance = useCallback(async () => {

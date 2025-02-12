@@ -6,7 +6,8 @@ const Home = ({ provider, signer, tokenContract }) => {
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [account, setAccount] = useState(null);
-
+    const [selectedRatings, setSelectedRatings] = useState({});
+    
     useEffect(() => {
         const fetchAccount = async () => {
             if (signer) {
@@ -33,9 +34,13 @@ const Home = ({ provider, signer, tokenContract }) => {
             for (let i = 1; i <= count; i++) {
                 try {
                     const model = await contract.models(i);
-
-                    // Ensure the model is valid and not deleted
                     if (model.exists && model.seller !== "0x0000000000000000000000000000000000000000") {
+                        const hasRated = account ? await contract.hasRated(i, account) : false;
+                        const totalRating = model.totalRating.toString();
+                        const ratingCount = model.ratingCount.toString();
+                        const averageRating = ratingCount === '0' ? 0 : 
+                            (parseInt(totalRating) / parseInt(ratingCount)).toFixed(1);
+
                         modelsArray.push({
                             id: i,
                             name: model.name,
@@ -43,16 +48,18 @@ const Home = ({ provider, signer, tokenContract }) => {
                             price: formatEther(model.price),
                             owner: model.seller,
                             purchased: model.isSold,
+                            averageRating,
+                            hasRated,
+                            totalRating,
+                            ratingCount
                         });
                     }
                 } catch (error) {
-                    console.warn(`Skipping deleted model with ID ${i}`);
+                    console.warn(`Skipping model with ID ${i}`);
                 }
             }
 
-            // Sort models: newest first
             modelsArray.reverse();
-
             setModels(modelsArray);
         } catch (error) {
             console.error("Error fetching models:", error);
@@ -60,11 +67,12 @@ const Home = ({ provider, signer, tokenContract }) => {
         } finally {
             setLoading(false);
         }
-    }, [provider]);
+    }, [provider, account]);
 
     useEffect(() => {
         fetchModels();
     }, [fetchModels]);
+  
 
     const buyModel = async (id, price, owner) => {
         if (!signer || !tokenContract) {
@@ -79,19 +87,15 @@ const Home = ({ provider, signer, tokenContract }) => {
 
         try {
             const priceInWei = parseUnits(price.toString(), 18);
-
-            // Check user's balance
             const userBalance = await tokenContract.balanceOf(account);
             if (userBalance < priceInWei) {
                 alert("Insufficient ERC-20 token balance.");
                 return;
             }
 
-            // Approve marketplace contract to spend tokens
             const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, priceInWei);
             await approveTx.wait();
 
-            // Execute purchase
             const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
             const tx = await contract.buyModel(id);
             await tx.wait();
@@ -112,13 +116,9 @@ const Home = ({ provider, signer, tokenContract }) => {
 
         try {
             const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            console.log("Deleting model with ID:", id);
-
             const tx = await contract.deleteModel(id);
             await tx.wait();
             alert("Model deleted successfully!");
-
-            // Refresh model list after deletion
             fetchModels();
         } catch (error) {
             console.error("Deletion failed:", error);
@@ -126,7 +126,37 @@ const Home = ({ provider, signer, tokenContract }) => {
         }
     };
 
-    // Separate models into categories
+    const rateModel = async (modelId) => {
+        const rating = selectedRatings[modelId];
+        if (typeof rating === 'undefined' || rating < 1 || rating > 5) {
+            alert("Please select a valid rating between 1 and 5.");
+            return;
+        }
+
+        if (!signer) {
+            alert("Please connect your wallet.");
+            return;
+        }
+
+        try {
+            const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+            const tx = await contract.rateModel(modelId, rating);
+            await tx.wait();
+            
+            setSelectedRatings(prev => {
+                const newState = { ...prev };
+                delete newState[modelId];
+                return newState;
+            });
+            
+            alert("Rating submitted successfully!");
+            fetchModels();
+        } catch (error) {
+            console.error("Rating submission failed:", error);
+            alert(`Transaction failed: ${error.reason || error.message}`);
+        }
+    };
+
     const yourModels = models.filter(model => model.owner.toLowerCase() === account?.toLowerCase());
     const availableModels = models.filter(model => model.owner.toLowerCase() !== account?.toLowerCase() && !model.purchased);
     const soldModels = models.filter(model => model.purchased);
@@ -138,21 +168,34 @@ const Home = ({ provider, signer, tokenContract }) => {
                 <p>Loading models...</p>
             ) : (
                 <div>
-                    {/* Section for "Your Models" */}
                     {yourModels.length > 0 && (
-                        <div>
-                            <h2>📌 Your Models</h2>
-                            {yourModels.map((model) => (
-                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: model.purchased ? "#ffd6d6" : "#f9f9f9" }}>
+           <div>
+             <h2>📌 Your Models</h2>
+                         {yourModels.map((model) => (
+                                <div 
+                                    key={model.id} 
+                                    style={{ 
+                                        border: "1px solid #ccc", 
+                                        padding: "10px", 
+                                        margin: "10px", 
+                                        background: model.purchased ? "#ffd6d6" : "#f9f9f9" 
+                                    }}
+                                >
                                     <h2>{model.name}</h2>
                                     <p>{model.description}</p>
                                     <p>Price: {model.price} ERC</p>
                                     <p>Owner: You</p>
 
-                                    {/* Sold Indicator */}
+                                    {/* Display Average Rating as Emoji Stars */}
+                                    {model.purchased && (
+                                        <p>
+                                            Average Rating: 
+                                            {" " + "⭐".repeat(Math.round(model.averageRating)) + "☆".repeat(5 - Math.round(model.averageRating))}
+                                        </p>
+                                    )}
+
                                     {model.purchased && <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>}
 
-                                    {/* Delete Button (only if the model is not sold) */}
                                     {!model.purchased && (
                                         <button 
                                             onClick={() => deleteModel(model.id)} 
@@ -166,7 +209,7 @@ const Home = ({ provider, signer, tokenContract }) => {
                         </div>
                     )}
 
-                    {/* Section for "Available Models" */}
+
                     {availableModels.length > 0 && (
                         <div>
                             <h2>🌎 Available Models</h2>
@@ -176,33 +219,64 @@ const Home = ({ provider, signer, tokenContract }) => {
                                     <p>{model.description}</p>
                                     <p>Price: {model.price} ERC</p>
                                     <p>Owner: {model.owner}</p>
-
-                                    {/* Buy Button */}
                                     {account && (
-                                        <button onClick={() => buyModel(model.id, model.price, model.owner)}>Buy</button>
+                                        <button onClick={() => buyModel(model.id, model.price, model.owner)}>
+                                            Buy
+                                        </button>
                                     )}
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Section for "Sold Models" */}
                     {soldModels.length > 0 && (
                         <div>
                             <h2>🔴 Sold Models</h2>
                             {soldModels.map((model) => (
-                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: "#ffd6d6" }}>
-                                    <h2>{model.name}</h2>
-                                    <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC</p>
-                                    <p>Owner: {model.owner}</p>
-                                    <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>
-                                </div>
-                            ))}
+                              <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: "#ffd6d6" }}>
+                                  <h2>{model.name}</h2>
+                                  <p>{model.description}</p>
+                                  <p>Price: {model.price} ERC</p>
+                                  <p>Owner: {model.owner}</p>
+
+                                  {/* Average Rating Display (Emoji Stars) */}
+                                  <p>
+                                      Average Rating: 
+                                      {" " + "⭐".repeat(Math.round(model.averageRating)) + "☆".repeat(5 - Math.round(model.averageRating))}
+                                  </p>
+
+                                  <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>
+
+                                  {/* Rating System (If User Hasn't Rated Yet) */}
+                                  {!model.hasRated && account && (
+                                      <div>
+                                          <div style={{ fontSize: "24px", cursor: "pointer" }}>
+                                              {[1, 2, 3, 4, 5].map((star) => (
+                                                  <span
+                                                      key={star}
+                                                      onClick={() => setSelectedRatings({
+                                                          ...selectedRatings,
+                                                          [model.id]: star
+                                                      })}
+                                                      style={{
+                                                          color: (selectedRatings[model.id] || 0) >= star ? "gold" : "gray"
+                                                      }}
+                                                  >
+                                                      {selectedRatings[model.id] >= star ? "⭐" : "☆"}
+                                                  </span>
+                                              ))}
+                                          </div>
+                                          <button onClick={() => rateModel(model.id)} style={{ marginTop: "5px" }}>
+                                              Submit Rating
+                                          </button>
+                                      </div>
+                                  )}
+                              </div>
+                          ))}
+
                         </div>
                     )}
 
-                    {/* If no models exist */}
                     {models.length === 0 && <p>No models available.</p>}
                 </div>
             )}
