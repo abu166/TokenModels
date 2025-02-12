@@ -39,21 +39,21 @@ Here's a visual walkthrough of the main features:
 - Smart Contract Integration: ethers.js
 - Styling: Bootstrap & Custom CSS Modules
 - Wallet Integration: MetaMask
-- Network: Ethereum (supports any EVM-compatible network)
+- Network: Ganache (supports any EVM-compatible network)
 
 ## Prerequisites
 
 - Node.js (v14 or higher)
 - MetaMask wallet extension
 - ERC-20 tokens for transactions
-- Access to an Ethereum network (mainnet, testnet, or local)
+- Access to an Ganache network (mainnet, testnet, or local)
 
 ## Installation
 
 1. Clone the repository:
 ```bash
 git clone [your-repository-url]
-cd ai-model-marketplace
+cd TokenModels/frontend
 ```
 
 2. Install dependencies:
@@ -159,7 +159,7 @@ src/
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
