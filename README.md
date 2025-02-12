@@ -13,11 +13,11 @@ Once the setup is complete, navigate to http://localhost:3000 to access the fron
 
 ## Demo Screenshots
 
-![Balance check]("materials\photos\balance check.jpeg")
+![Balance check]("materials\photos\balance_check.jpeg")
 ![List Model]("materials\photos\listmodel.png")
 ![Model]("materials\photos\model.jpeg")
-![How model looks for other users]("materials\photos\model 2.jpeg")
-![Sold Model]("materials\photos\sold model.jpeg")
+![How model looks for other users]("materials\photos\model_2.jpeg")
+![Sold Model]("materials\photos\sold_model.jpeg")
 
 ## Examples
 Example 1:
@@ -45,3 +45,5 @@ Example 3:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Let me know if you need any further changes or additional details!
+
+
