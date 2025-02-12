@@ -93,7 +93,7 @@ function App() {
     } catch (error) {
       console.error("Error setting up wallet connection:", error);
       resetState();
-    }
+    } 
   }, [initializeContracts, resetState]);
 
   useEffect(() => {

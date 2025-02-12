@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { formatEther, parseUnits, Contract } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../config";
+import { Container, Row, Col, Card, Spinner, Alert, Badge, Button, Form } from "react-bootstrap";
+import styles from './Home.module.css';
 
 const Home = ({ provider, signer, tokenContract }) => {
     const [models, setModels] = useState([]);
@@ -161,125 +163,139 @@ const Home = ({ provider, signer, tokenContract }) => {
     const availableModels = models.filter(model => model.owner.toLowerCase() !== account?.toLowerCase() && !model.purchased);
     const soldModels = models.filter(model => model.purchased);
 
+
+    const renderModelCard = (model, isOwner = false) => (
+      <Col key={model.id} lg={4} md={6} className="mb-4">
+          <Card className={`${styles.model-Card} h-100`}>
+              <Card.Body>
+                  <div className="d-flex justify-content-between align-items-start mb-3">
+                      <Card.Title className="text-primary">{model.name}</Card.Title>
+                      {model.purchased && <Badge className={styles.sold_badge}>SOLD</Badge>}
+                      {isOwner && <Badge className={styles.owner_badge}>YOUR MODEL</Badge>}
+                  </div>
+                  <Card.Text className="text-muted mb-3">{model.description}</Card.Text>
+                  
+                  <div className="mb-3">
+                      <strong>Price:</strong> {model.price} ERC
+                      <br />
+                      <small className="text-muted">Owner: {isOwner ? 'You' : `${model.owner.slice(0,6)}...${model.owner.slice(-4)}`}</small>
+                  </div>
+
+                  {model.purchased && (
+                      <div className="mb-3">
+                          <strong>Average Rating:</strong>
+                          <div className={styles.rating_stars}>
+                              {"⭐".repeat(Math.round(model.averageRating))}
+                              {"☆".repeat(5 - Math.round(model.averageRating))}
+                              <span className="ms-2">({model.averageRating}/5)</span>
+                          </div>
+                      </div>
+                  )}
+
+                  <div className="d-flex justify-content-between align-items-center">
+                      {!model.purchased && isOwner && (
+                          <Button 
+                              variant="danger" 
+                              className={styles.btn_danger_custom}
+                              onClick={() => deleteModel(model.id)}
+                          >
+                              Delete
+                          </Button>
+                      )}
+
+                      {!isOwner && !model.purchased && account && (
+                          <Button 
+                              className={styles.btn_custom}
+                              onClick={() => buyModel(model.id, model.price, model.owner)}
+                          >
+                              Buy Model
+                          </Button>
+                      )}
+
+                      {model.purchased && !model.hasRated && account && !isOwner && (
+                          <div className="w-100">
+                              <Form.Group>
+                                  <Form.Label>Rate this model:</Form.Label>
+                                  <div className={styles.rating_stars}>
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                          <span
+                                              key={star}
+                                              onClick={() => setSelectedRatings({
+                                                  ...selectedRatings,
+                                                  [model.id]: star
+                                              })}
+                                              style={{
+                                                  color: (selectedRatings[model.id] || 0) >= star ? "gold" : "#ccc",
+                                                  marginRight: "5px"
+                                              }}
+                                          >
+                                              ★
+                                          </span>
+                                      ))}
+                                  </div>
+                                  <Button
+                                      className={`${styles.btn_custom} mt-2`}
+                                      onClick={() => rateModel(model.id)}
+                                      disabled={!selectedRatings[model.id]}
+                                  >
+                                      Submit Rating
+                                  </Button>
+                              </Form.Group>
+                          </div>
+                      )}
+                  </div>
+              </Card.Body>
+          </Card>
+      </Col>
+  );
+
     return (
-        <div>
-            <h1>AI Model Marketplace</h1>
-            {loading ? (
-                <p>Loading models...</p>
-            ) : (
-                <div>
-                    {yourModels.length > 0 && (
-           <div>
-             <h2>📌 Your Models</h2>
-                         {yourModels.map((model) => (
-                                <div 
-                                    key={model.id} 
-                                    style={{ 
-                                        border: "1px solid #ccc", 
-                                        padding: "10px", 
-                                        margin: "10px", 
-                                        background: model.purchased ? "#ffd6d6" : "#f9f9f9" 
-                                    }}
-                                >
-                                    <h2>{model.name}</h2>
-                                    <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC</p>
-                                    <p>Owner: You</p>
+        <div className={styles.home_container}>
+            <Container>
+                <h1 className="text-center mb-5" style={{ color: "#3E5C76" }}>AI Model Marketplace</h1>
+                
+                {loading ? (
+                    <div className="text-center">
+                        <Spinner animation="border" className={styles.loading_spinner} />
+                        <p className="mt-2">Loading models...</p>
+                    </div>
+                ) : (
+                    <>
+                        {yourModels.length > 0 && (
+                            <section className="mb-5">
+                                <h3 className={styles.section_title}>📌 Your Models</h3>
+                                <Row>
+                                    {yourModels.map(model => renderModelCard(model, true))}
+                                </Row>
+                            </section>
+                        )}
 
-                                    {/* Display Average Rating as Emoji Stars */}
-                                    {model.purchased && (
-                                        <p>
-                                            Average Rating: 
-                                            {" " + "⭐".repeat(Math.round(model.averageRating)) + "☆".repeat(5 - Math.round(model.averageRating))}
-                                        </p>
-                                    )}
+                        {availableModels.length > 0 && (
+                            <section className="mb-5">
+                                <h3 className={styles.section_title}>🌍 Available Models</h3>
+                                <Row>
+                                    {availableModels.map(model => renderModelCard(model))}
+                                </Row>
+                            </section>
+                        )}
 
-                                    {model.purchased && <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>}
+                        {soldModels.length > 0 && (
+                            <section className="mb-5">
+                                <h3 className={styles.section_title}>🔴 Sold Models</h3>
+                                <Row>
+                                    {soldModels.map(model => renderModelCard(model))}
+                                </Row>
+                            </section>
+                        )}
 
-                                    {!model.purchased && (
-                                        <button 
-                                            onClick={() => deleteModel(model.id)} 
-                                            style={{ marginLeft: "10px", background: "red", color: "white" }}
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-
-                    {availableModels.length > 0 && (
-                        <div>
-                            <h2>🌎 Available Models</h2>
-                            {availableModels.map((model) => (
-                                <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px" }}>
-                                    <h2>{model.name}</h2>
-                                    <p>{model.description}</p>
-                                    <p>Price: {model.price} ERC</p>
-                                    <p>Owner: {model.owner}</p>
-                                    {account && (
-                                        <button onClick={() => buyModel(model.id, model.price, model.owner)}>
-                                            Buy
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {soldModels.length > 0 && (
-                        <div>
-                            <h2>🔴 Sold Models</h2>
-                            {soldModels.map((model) => (
-                              <div key={model.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px", background: "#ffd6d6" }}>
-                                  <h2>{model.name}</h2>
-                                  <p>{model.description}</p>
-                                  <p>Price: {model.price} ERC</p>
-                                  <p>Owner: {model.owner}</p>
-
-                                  {/* Average Rating Display (Emoji Stars) */}
-                                  <p>
-                                      Average Rating: 
-                                      {" " + "⭐".repeat(Math.round(model.averageRating)) + "☆".repeat(5 - Math.round(model.averageRating))}
-                                  </p>
-
-                                  <p style={{ color: "red", fontWeight: "bold" }}>SOLD</p>
-
-                                  {/* Rating System (If User Hasn't Rated Yet) */}
-                                  {!model.hasRated && account && (
-                                      <div>
-                                          <div style={{ fontSize: "24px", cursor: "pointer" }}>
-                                              {[1, 2, 3, 4, 5].map((star) => (
-                                                  <span
-                                                      key={star}
-                                                      onClick={() => setSelectedRatings({
-                                                          ...selectedRatings,
-                                                          [model.id]: star
-                                                      })}
-                                                      style={{
-                                                          color: (selectedRatings[model.id] || 0) >= star ? "gold" : "gray"
-                                                      }}
-                                                  >
-                                                      {selectedRatings[model.id] >= star ? "⭐" : "☆"}
-                                                  </span>
-                                              ))}
-                                          </div>
-                                          <button onClick={() => rateModel(model.id)} style={{ marginTop: "5px" }}>
-                                              Submit Rating
-                                          </button>
-                                      </div>
-                                  )}
-                              </div>
-                          ))}
-
-                        </div>
-                    )}
-
-                    {models.length === 0 && <p>No models available.</p>}
-                </div>
-            )}
+                        {models.length === 0 && !loading && (
+                            <Alert variant="info" className="text-center">
+                                No models available in the marketplace.
+                            </Alert>
+                        )}
+                    </>
+                )}
+            </Container>
         </div>
     );
 };

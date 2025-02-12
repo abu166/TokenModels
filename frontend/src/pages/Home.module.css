@@ -1,0 +1,63 @@
+/* src/pages/Home.module.css */
+.home-container {
+    background-color: #EAF2F8;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.section-title {
+    color: #3E5C76;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #7BA7C7;
+}
+
+.model-card {
+    background-color: #D4E6F1 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s;
+}
+
+.model-card:hover {
+    transform: translateY(-5px);
+}
+
+.rating-stars {
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.sold-badge {
+    background-color: #dc3545 !important;
+    font-size: 0.9rem;
+}
+
+.owner-badge {
+    background-color: #7BA7C7 !important;
+    font-size: 0.9rem;
+}
+
+.btn-custom {
+    background-color: #7BA7C7 !important;
+    color: white !important;
+    border: none;
+}
+
+.btn-custom:hover {
+    background-color: #5A8DA6 !important;
+}
+
+.btn-danger-custom {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.loading-spinner {
+    color: #7BA7C7;
+    width: 3rem;
+    height: 3rem;
+}
